@@ -121,13 +121,13 @@ public class ProductController(
         {
             return NotFound("Product not found.");
         }
-        return Ok(product);
+        return Ok(mapper.Map<ProductNoIdDTO>(product));
     }
 
     [HttpGet]
     public async Task<IActionResult> GetProducts()
     {
         var products = await unitOfWork.ProductRepository.GetAllAsync();
-        return Ok(mapper.Map<IEnumerable<ProductNoIdDTO>>(products));
+        return Ok(products);
     }
 }
