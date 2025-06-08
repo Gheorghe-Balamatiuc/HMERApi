@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using AutoMapper;
 using HMERApi.Models;
 using HMERApi.Models.DTO;
@@ -41,6 +42,35 @@ public class ProductController(
                 Image = createdImageName
             };
             await unitOfWork.ProductRepository.CreateAsync(product);
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "python",
+                Arguments = "Services/HMER/inference.py --config Services/HMER/14.yaml --image_path uploads/" + createdImageName,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(psi);
+            if (process == null)
+            {
+                logger.LogError("Failed to start Python process");
+                return StatusCode(500, "Failed to process image");
+            }
+
+            string stdout = await process.StandardOutput.ReadToEndAsync();
+            string stderr = await process.StandardError.ReadToEndAsync();
+            process.WaitForExit();
+
+            if (process.ExitCode != 0)
+            {
+                logger.LogError("Python process failed with exit code {ExitCode}: {Stderr}", process.ExitCode, stderr);
+                return StatusCode(500, "Failed to process image");
+            }
+
+            logger.LogInformation("Python process completed successfully: {Stdout}", stdout);
 
             return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
         }

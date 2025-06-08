@@ -1,0 +1,1 @@
+python inference.py --config 14.yaml --image_path 18_em_0_0.bmp
