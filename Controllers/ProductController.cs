@@ -69,7 +69,7 @@ public class ProductController(
             var product = new Product
             {
                 Image = createdImageName,
-                ImagePrediction = stdout.Replace(" ", "").Trim()
+                ImagePrediction = stdout.Trim()
             };
             await unitOfWork.ProductRepository.CreateAsync(product);
 
@@ -135,7 +135,7 @@ public class ProductController(
                 logger.LogInformation("Python process completed successfully: {Stdout}", stdout);
 
                 existingProduct.Image = createdImageName;
-                existingProduct.ImagePrediction = stdout.Replace(" ", "").Trim();
+                existingProduct.ImagePrediction = stdout.Trim();
 
                 fileService.DeleteFile(oldImage);
             }
