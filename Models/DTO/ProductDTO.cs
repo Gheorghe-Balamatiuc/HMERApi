@@ -13,4 +13,7 @@ public class ProductNoIdDTO
     [Required]
     [MaxLength(50)]
     public string? Image { get; set; }
+    [Required]
+    [MaxLength(8000)]
+    public string? ImagePrediction { get; set; }
 }

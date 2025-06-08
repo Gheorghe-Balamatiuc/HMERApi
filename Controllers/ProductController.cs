@@ -37,12 +37,6 @@ public class ProductController(
             string[] allowedExtensions = [".jpg", ".jpeg", ".png", ".bmp"];
             string createdImageName = await fileService.SaveFileAsync(productToAdd.ImageFile, allowedExtensions);
 
-            var product = new Product
-            {
-                Image = createdImageName
-            };
-            await unitOfWork.ProductRepository.CreateAsync(product);
-
             var psi = new ProcessStartInfo
             {
                 FileName = "python",
@@ -71,6 +65,13 @@ public class ProductController(
             }
 
             logger.LogInformation("Python process completed successfully: {Stdout}", stdout);
+
+            var product = new Product
+            {
+                Image = createdImageName,
+                ImagePrediction = stdout.Replace(" ", "").Trim()
+            };
+            await unitOfWork.ProductRepository.CreateAsync(product);
 
             return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
         }
@@ -104,7 +105,37 @@ public class ProductController(
                 string[] allowedExtensions = [".jpg", ".jpeg", ".png", ".bmp"];
                 string createdImageName = await fileService.SaveFileAsync(productToUpdate.ImageFile, allowedExtensions);
 
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "python",
+                    Arguments = "Services/HMER/inference.py --config Services/HMER/14.yaml --image_path uploads/" + createdImageName,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using var process = Process.Start(psi);
+                if (process == null)
+                {
+                    logger.LogError("Failed to start Python process");
+                    return StatusCode(500, "Failed to process image");
+                }
+
+                string stdout = await process.StandardOutput.ReadToEndAsync();
+                string stderr = await process.StandardError.ReadToEndAsync();
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                {
+                    logger.LogError("Python process failed with exit code {ExitCode}: {Stderr}", process.ExitCode, stderr);
+                    return StatusCode(500, "Failed to process image");
+                }
+
+                logger.LogInformation("Python process completed successfully: {Stdout}", stdout);
+
                 existingProduct.Image = createdImageName;
+                existingProduct.ImagePrediction = stdout.Replace(" ", "").Trim();
 
                 fileService.DeleteFile(oldImage);
             }
