@@ -11,5 +11,6 @@ class ProductConfig : IEntityTypeConfiguration<Product>
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Image).IsRequired().HasMaxLength(50);
         builder.Property(p => p.ImagePrediction).IsRequired().HasMaxLength(8000);
+        builder.Property(p => p.PredictionDescription).IsRequired().HasColumnType("nvarchar(max)");
     }
 }

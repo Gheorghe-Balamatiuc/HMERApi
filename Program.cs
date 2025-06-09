@@ -17,7 +17,9 @@ builder.Services.AddDbContext<HMERContext>(
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-builder.Services.AddScoped<IFileService, FileService>();
+builder.Services.AddSingleton<IFileService, FileService>();
+
+builder.Services.AddSingleton<IProcessService, ProcessService>();
 
 builder.Services.AddCors(options =>
 {

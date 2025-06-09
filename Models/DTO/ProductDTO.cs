@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HMERApi.Models.DTO;
 
@@ -16,4 +17,7 @@ public class ProductNoIdDTO
     [Required]
     [MaxLength(8000)]
     public string? ImagePrediction { get; set; }
+    [Required]
+    [Column(TypeName = "nvarchar(max)")]
+    public string? PredictionDescription { get; set; }
 }
