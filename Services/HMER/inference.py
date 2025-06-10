@@ -1,6 +1,7 @@
 import os
 import cv2
 import argparse
+import numpy as np
 import torch
 import json
 from tqdm import tqdm
@@ -80,11 +81,53 @@ def convert(nodeid, gtd_list):
                 if child_list[i][2] in ['Right']:
                     return_string += convert(child_list[i][1], gtd_list)
         return return_string
+    
+
+def resize_to_exact_pixels(width, height, target_pixels=80000):
+    aspect_ratio = width / height
+    
+    new_height = np.sqrt(target_pixels / aspect_ratio)
+    new_width = new_height * aspect_ratio
+    
+    new_height = int(round(new_height))
+    new_width = int(round(new_width))
+    
+    new_height = max(1, new_height)
+    new_width = max(1, new_width)
+    
+    return new_width, new_height
+
+def process_image_to_binary(image, target_pixels=80000):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    blur = cv2.GaussianBlur(gray, (5, 5), 0)
+    
+    _, threshold = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    
+    binary_height, binary_width = threshold.shape[:2]
+    new_binary_width, new_binary_height = resize_to_exact_pixels(binary_width, binary_height, target_pixels)
+    binary = cv2.resize(threshold, (new_binary_width, new_binary_height), interpolation=cv2.INTER_NEAREST)
+    
+    non_zero_pixels = cv2.findNonZero(binary)
+    if non_zero_pixels is not None:
+        x, y, w, h = cv2.boundingRect(non_zero_pixels)
+        
+        margin = 10
+        x = max(0, x - margin)
+        y = max(0, y - margin)
+        w = min(binary.shape[1] - x, w + 2 * margin)
+        h = min(binary.shape[0] - y, h + 2 * margin)
+        
+        binary_cropped = binary[y:y+h, x:x+w]
+    else:
+        binary_cropped = binary
+    
+    return binary_cropped, gray, binary
 
 
 with torch.no_grad():
     img = cv2.imread(os.path.join(args.image_path))
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img = process_image_to_binary(img)[0]
     image = torch.Tensor(img) / 255
     image = image.unsqueeze(0).unsqueeze(0)
 
