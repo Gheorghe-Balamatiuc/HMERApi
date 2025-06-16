@@ -1,3 +1,7 @@
+/*
+ * Main entry point for the HMER (Handwritten Math Expression Recognition) API
+ * Configures services, middleware, and starts the web application
+ */
 using HMERApi.AutoMapper;
 using HMERApi.Data;
 using HMERApi.Repository;
@@ -12,15 +16,18 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+// Configure database connection using SQL Server
 builder.Services.AddDbContext<HMERContext>(
     opt => opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Register repositories
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+// Register services
 builder.Services.AddSingleton<IFileService, FileService>();
-
 builder.Services.AddSingleton<IProcessService, ProcessService>();
 
+// Configure CORS to allow any origin, method, and header
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(
@@ -33,6 +40,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddControllers();
 
+// Configure AutoMapper
 builder.Services.AddAutoMapper(typeof(MapperConfig));
 
 var app = builder.Build();
@@ -52,6 +60,7 @@ app.UseHttpsRedirection();
 
 app.UseCors();
 
+// Configure static files middleware to serve uploaded files from the Uploads directory
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(
